@@ -1,0 +1,64 @@
+/* Extend atof to handle scientific notation of the form:
+123.45e-6
+where e (or E) indicates a power of 10. */
+#include <stdio.h>
+#include <ctype.h>
+
+double atof_extended(char s[]) {
+    double val, power;
+    int i, sign, exp_sign, exp;
+
+    for (i = 0; isspace(s[i]); i++)   // skip whitespace
+        ;
+
+    sign = (s[i] == '-') ? -1 : 1;
+    if (s[i] == '+' || s[i] == '-')
+        i++;
+
+    for (val = 0.0; isdigit(s[i]); i++)
+        val = 10.0 * val + (s[i] - '0');
+
+    if (s[i] == '.')
+        i++;
+
+    for (power = 1.0; isdigit(s[i]); i++) {
+        val = 10.0 * val + (s[i] - '0');
+        power *= 10;
+    }
+
+    val = sign * val / power;
+
+    // --- Handle scientific notation part (e/E) ---
+    if (s[i] == 'e' || s[i] == 'E') {
+        i++;
+        exp_sign = (s[i] == '-') ? -1 : 1;
+        if (s[i] == '+' || s[i] == '-')
+            i++;
+
+        for (exp = 0; isdigit(s[i]); i++)
+            exp = 10 * exp + (s[i] - '0');
+
+        // Apply exponent
+        while (exp > 0) {
+            if (exp_sign == 1)
+                val *= 10;
+            else
+                val /= 10;
+            exp--;
+        }
+    }
+
+    return val;
+}
+
+int main() {
+    char s1[] = "123.45e-6";
+    char s2[] = "3.5E2";
+    char s3[] = "7.89";
+
+    printf("%s = %g\n", s1, atof_extended(s1));
+    printf("%s = %g\n", s2, atof_extended(s2));
+    printf("%s = %g\n", s3, atof_extended(s3));
+
+    return 0;
+}
