@@ -1,0 +1,125 @@
+/* Revise the reverse Polish notation calculator so that it can handle the modulus (%) operator and negative numbers */
+/* Exercise 4.3: RPN Calculator with % and negative numbers */
+
+#include <stdio.h>
+#include <stdlib.h>   /* for atof() */
+#include <ctype.h>
+
+#define MAXOP 100     /* max size of operand or operator */
+#define NUMBER '0'    /* signal that a number was found */
+#define MAXVAL 100    /* maximum depth of val stack */
+
+int getop(char []);
+void push(double);
+double pop(void);
+
+/* stack for operands */
+int sp = 0;            /* next free stack position */
+double val[MAXVAL];    /* value stack */
+
+/* push: push f onto value stack */
+void push(double f) {
+    if (sp < MAXVAL)
+        val[sp++] = f;
+    else
+        printf("error: stack full, can't push %g\n", f);
+}
+
+/* pop: pop and return top value from stack */
+double pop(void) {
+    if (sp > 0)
+        return val[--sp];
+    else {
+        printf("error: stack empty\n");
+        return 0.0;
+    }
+}
+
+/* getop: get next operator or numeric operand into s[] */
+int getop(char s[]) {
+    int i = 0, c;
+
+    /* skip whitespace */
+    while ((s[0] = c = getchar()) == ' ' || c == '\t')
+        ;
+    s[1] = '\0';
+
+    if (c == EOF)
+        return EOF;
+
+    /* if not a number and not '-', return it */
+    if (!isdigit(c) && c != '.' && c != '-')
+        return c;
+
+    /* handle negative numbers */
+    if (c == '-') {
+        int next = getchar();
+        if (isdigit(next) || next == '.') {
+            s[i++] = c;         /* include '-' */
+            c = next;
+        } else {
+            if (next != EOF)
+                ungetc(next, stdin);
+            return '-';         /* it's just minus operator */
+        }
+    }
+
+    if (isdigit(c))             /* collect integer part */
+        while (isdigit(s[i++] = c = getchar()))
+            ;
+    if (c == '.')               /* collect fraction part */
+        while (isdigit(s[i++] = c = getchar()))
+            ;
+    s[--i] = '\0';
+    if (c != EOF)
+        ungetc(c, stdin);
+
+    return NUMBER;
+}
+
+int main(void) {
+    int type;
+    double op2;
+    char s[MAXOP];
+
+    while ((type = getop(s)) != EOF) {
+        switch (type) {
+        case NUMBER:
+            push(atof(s));
+            break;
+        case '+':
+            push(pop() + pop());
+            break;
+        case '*':
+            push(pop() * pop());
+            break;
+        case '-':
+            op2 = pop();
+            push(pop() - op2);
+            break;
+        case '/':
+            op2 = pop();
+            if (op2 != 0.0)
+                push(pop() / op2);
+            else
+                printf("error: zero divisor\n");
+            break;
+        case '%':   /* modulus operator */
+            op2 = pop();
+            if (op2 != 0.0) {
+                int i2 = (int) op2;
+                int i1 = (int) pop();
+                push((double)(i1 % i2));
+            } else
+                printf("error: zero divisor for %%\n");
+            break;
+        case '\n':
+            printf("\t%.8g\n", pop());
+            break;
+        default:
+            printf("error: unknown command %s\n", s);
+            break;
+        }
+    }
+    return 0;
+}
